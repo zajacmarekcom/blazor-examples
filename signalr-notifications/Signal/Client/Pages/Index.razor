@@ -1,0 +1,71 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@implements IAsyncDisposable
+
+<PageTitle>Index</PageTitle>
+
+@if (_hubConnection == null)
+{
+    <div class="row">
+        <div class="col-4">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Group name</RadzenText>
+                <RadzenTextBox @bind-Value="@GroupName" class="w-100" />
+            </RadzenCard>
+            <RadzenCard>
+                <RadzenButton Click="@Connect" ButtonType="ButtonType.Button" Text="Connect"></RadzenButton>
+            </RadzenCard>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-4">
+            <RadzenCard>
+                <RadzenButton Click="@Notify" ButtonType="ButtonType.Button" Text="Complete task"></RadzenButton>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+
+@code
+{
+    private string GroupName { get; set; } = string.Empty;
+    private HubConnection? _hubConnection;
+    
+    private async Task Connect()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/testhub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On("ReceiveNotification", () =>
+        {
+            NotificationService.Notify(severity: NotificationSeverity.Success, summary: "Task completed", detail: "Task completed");
+        });
+        StateHasChanged();
+        await _hubConnection.StartAsync();
+        await _hubConnection.SendAsync("JoinGroup", GroupName);
+    }
+
+    private async Task Notify()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync("ActionFinished", GroupName);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}
