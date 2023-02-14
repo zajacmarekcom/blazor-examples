@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Client\Signal.Client.csproj" />
+    <ProjectReference Include="..\Signal.Shared\Signal.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
